@@ -10,9 +10,27 @@ import chisel3.util._
 class UartIO extends DecoupledIO(UInt(8.W)) {}
 
 /**
- * Transmit part of the UART.
- * A minimal version without any additional buffering.
- * Use a ready/valid handshaking.
+ * UART Transmitter Module
+ *
+ * Implements 8-N-1 serial transmission (8 data bits, no parity, 1 stop bit)
+ * with ready/valid handshaking protocol.
+ *
+ * @param frequency System clock frequency in Hz
+ * @param baudRate Target baud rate in bits/second
+ *
+ * Features:
+ * - Minimal design without FIFO buffering
+ * - Two stop bits for reliable transmission
+ * - Automatic bit rate generation from frequency/baudRate
+ *
+ * Timing:
+ * - BIT_CNT = (frequency + baudRate/2) / baudRate - 1
+ * - Ready when idle (cntReg == 0 && bitsReg == 0)
+ *
+ * Protocol:
+ * - 11-bit frame: 1 start + 8 data + 2 stop bits
+ * - LSB first transmission
+ * - Idle state: TXD = 1
  */
 class Tx(frequency: Int, baudRate: Int) extends Module {
   val io = IO(new Bundle {
@@ -52,11 +70,31 @@ class Tx(frequency: Int, baudRate: Int) extends Module {
 }
 
 /**
- * Receive part of the UART.
- * A minimal version without any additional buffering.
- * Use a ready/valid handshaking.
+ * UART Receiver Module
  *
- * The following code is inspired by Tommy's receive code at:
+ * Implements 8-N-1 serial reception with automatic start bit detection
+ * and ready/valid handshaking protocol.
+ *
+ * @param frequency System clock frequency in Hz
+ * @param baudRate Target baud rate in bits/second
+ *
+ * Features:
+ * - Two-stage synchronizer for async RX signal (metastability protection)
+ * - Start bit detection with 1.5 bit delay for mid-bit sampling
+ * - Automatic data capture with valid flag generation
+ *
+ * Timing:
+ * - BIT_CNT = (frequency + baudRate/2) / baudRate - 1 (bit period)
+ * - START_CNT = (3*frequency/2 + baudRate/2) / baudRate - 1 (1.5 bits)
+ * - Mid-bit sampling ensures reliable capture despite clock tolerance
+ *
+ * Protocol:
+ * - 10-bit frame: 1 start + 8 data + 1 stop bit
+ * - LSB first reception
+ * - Valid flag set after 8th bit captured
+ *
+ * Attribution:
+ * Inspired by Tommy Thorn's YARVI UART receiver
  * https://github.com/tommythorn/yarvi
  */
 class Rx(frequency: Int, baudRate: Int) extends Module {

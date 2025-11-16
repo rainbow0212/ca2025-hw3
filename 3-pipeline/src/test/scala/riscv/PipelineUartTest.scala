@@ -163,29 +163,29 @@ class UartHarness(exeFilename: String, implementation: Int) extends Module {
 class PipelineUartTest extends AnyFlatSpec with ChiselScalatestTester {
   private val DoneValue = BigInt("CAFEF00D", 16)
 
-  private def exerciseUart(c: UartHarness, maxCycles: Int = 8000): Unit = {
-    c.io.interrupt_flag.poke(0.U)
-    c.io.regs_debug_read_address.poke(0.U)
-    c.io.csr_debug_read_address.poke(0.U)
-    c.io.mem_debug_read_address.poke(0x100.U)
-    c.clock.setTimeout(0)
-    var matched = false
-    var cycles  = 0
-    while (!matched && cycles < maxCycles) {
-      c.clock.step()
-      cycles += 1
-      matched = c.io.mem_debug_read_data.peek().litValue == DoneValue
-    }
-    assert(matched, s"UART program did not signal completion within $maxCycles cycles")
-    c.io.uart_tx_count.expect(8.U)
-    c.io.uart_tx_last.expect(0x0a.U)
-  }
-
   for (cfg <- PipelineConfigs.All) {
-    behavior.of(s"${cfg.name} UART flow")
-    it should "write characters to the UART MMIO registers" in {
+    behavior.of(s"${cfg.name} UART Comprehensive Test")
+    it should "pass all TX and RX tests" in {
       test(new UartHarness("uart.asmbin", cfg.implementation)).withAnnotations(TestAnnotations.annos) { c =>
-        exerciseUart(c)
+        c.io.interrupt_flag.poke(0.U)
+        c.io.regs_debug_read_address.poke(0.U)
+        c.io.csr_debug_read_address.poke(0.U)
+        c.clock.setTimeout(0)
+
+        // Run comprehensive test (TX + 3 RX tests)
+        for (_ <- 0 until 30000) {
+          c.clock.step()
+        }
+
+        // Check completion
+        c.io.mem_debug_read_address.poke(0x100.U)
+        c.clock.step()
+        c.io.mem_debug_read_data.expect(0xcafef00dL.U)  // DONE_FLAG
+
+        // Check all tests passed: TX + Multi-byte RX + Binary RX + Timeout RX
+        c.io.mem_debug_read_address.poke(0x104.U)
+        c.clock.step()
+        c.io.mem_debug_read_data.expect(0xF.U)  // 0b1111 = all 4 tests passed
       }
     }
   }

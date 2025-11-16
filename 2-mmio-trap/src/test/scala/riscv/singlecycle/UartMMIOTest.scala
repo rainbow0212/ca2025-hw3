@@ -157,19 +157,22 @@ class UartHarness(exeFilename: String) extends Module {
 }
 
 class UartMMIOTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior.of("[UART] MMIO send/enable path")
-  it should "write characters to the UART MMIO registers" in {
+  behavior.of("[UART] Comprehensive TX+RX test")
+  it should "pass all TX and RX tests" in {
     test(new UartHarness("uart.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
       c.io.interrupt_flag.poke(0.U)
       c.clock.setTimeout(0)
-      for (_ <- 0 until 2000) {
+      for (_ <- 0 until 15000) {
         c.clock.step()
       }
       c.io.mem_debug_read_address.poke(0x100.U)
       c.clock.step()
       c.io.mem_debug_read_data.expect(0xcafef00dL.U)
-      c.io.uart_tx_count.expect(8.U)
-      c.io.uart_tx_last.expect(0x0a.U)
+
+      // Check all tests passed: TX + Multi-byte RX + Binary RX + Timeout RX
+      c.io.mem_debug_read_address.poke(0x104.U)
+      c.clock.step()
+      c.io.mem_debug_read_data.expect(0xF.U)  // 0b1111 = all 4 tests passed
     }
   }
 }

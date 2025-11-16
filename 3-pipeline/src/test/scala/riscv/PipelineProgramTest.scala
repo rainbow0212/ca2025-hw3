@@ -89,7 +89,7 @@ class PipelineProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         // Section 2: Store-Load Forwarding
         c.io.mem_debug_read_address.poke(0x14.U)
         c.clock.step()
-        c.io.mem_debug_read_data.expect(0xAB.U, "Store-Load: mem[0x14] should be 0xAB")
+        c.io.mem_debug_read_data.expect(0xab.U, "Store-Load: mem[0x14] should be 0xAB")
 
         // Section 3: Multiple Consecutive Loads (sum of zeros)
         c.io.mem_debug_read_address.poke(0x18.U)
@@ -97,7 +97,7 @@ class PipelineProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.mem_debug_read_data.expect(0.U, "Multi-Load: mem[0x18] should be 0")
 
         // Section 4: Branch Condition RAW (branch not taken)
-        c.io.mem_debug_read_address.poke(0x1C.U)
+        c.io.mem_debug_read_address.poke(0x1c.U)
         c.clock.step()
         c.io.mem_debug_read_data.expect(10.U, "Branch RAW: mem[0x1C] should be 10")
 
@@ -106,8 +106,10 @@ class PipelineProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.mem_debug_read_address.poke(0x24.U)
         c.clock.step()
         val csrValue = c.io.mem_debug_read_data.peek().litValue
-        assert(csrValue >= 0x1888 && csrValue <= 0x1900,
-          f"CSR RAW: mem[0x24] should be 0x1888-0x1900, got 0x$csrValue%x")
+        assert(
+          csrValue >= 0x1888 && csrValue <= 0x1900,
+          f"CSR RAW: mem[0x24] should be 0x1888-0x1900, got 0x$csrValue%x"
+        )
 
         // Section 7: Long Dependency Chain (1+2+3+4 = 5)
         c.io.mem_debug_read_address.poke(0x28.U)
@@ -115,7 +117,7 @@ class PipelineProgramTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.mem_debug_read_data.expect(5.U, "Long Chain: mem[0x28] should be 5")
 
         // Section 8: WB Stage Forwarding
-        c.io.mem_debug_read_address.poke(0x2C.U)
+        c.io.mem_debug_read_address.poke(0x2c.U)
         c.clock.step()
         c.io.mem_debug_read_data.expect(7.U, "WB Forward: mem[0x2C] should be 7")
 
