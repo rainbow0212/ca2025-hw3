@@ -9,18 +9,13 @@ ThisBuild / organization     := "tw.edu.ncku"
 val chiselVersion = "3.6.1"
 
 // Root aggregate project
-/*
+
 lazy val root = (project in file("."))
   .aggregate(common, minimal, singleCycle, mmioTrap, pipeline)
   .settings(
     name := "mycpu-root"
   )
-*/
-lazy val root = (project in file("."))
-  .aggregate(common, minimal, singleCycle)
-  .settings(
-    name := "mycpu-root"
-  )
+
 
 // Common shared module - hardware modules used by multiple projects
 lazy val common = (project in file("common"))
